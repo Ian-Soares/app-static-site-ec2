@@ -9,7 +9,6 @@ module "network" {
 module "compute" {
   source = "./modules/compute"
 
-  instance_ami           = "ami-0d8f6eb4f641ef691"
   vpc_security_group_ids = module.network.sg_public_id
   subnet_pub_id          = module.network.subnet_pub_id
   instance_user_data     = base64encode(data.template_file.user_data.rendered)
