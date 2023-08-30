@@ -1,24 +1,19 @@
-# VPC
 resource "aws_vpc" "vpc" {
-  cidr_block           = "10.0.0.0/16"
-  enable_dns_hostnames = "true"
+  cidr_block           = var.network_cidr_block
+  enable_dns_hostnames = var.network_enable_dns_hostnames
 }
 
-# INTERNET GATEWAY
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.vpc.id
 }
 
-# SUBNET
 resource "aws_subnet" "sn_public" {
   vpc_id                  = aws_vpc.vpc.id
-  cidr_block              = "10.0.1.0/24"
-  map_public_ip_on_launch = "true"
-  availability_zone       = "us-east-1a"
-
+  cidr_block              = var.subnet_pub_cidr_block
+  map_public_ip_on_launch = var.subnet_map_public_ip_on_launch
+  availability_zone       = var.subnet_pub_availability_zone
 }
 
-# ROUTE TABLE
 resource "aws_route_table" "rt_public" {
   vpc_id = aws_vpc.vpc.id
 
@@ -28,15 +23,13 @@ resource "aws_route_table" "rt_public" {
   }
 }
 
-# SUBNET ASSOCIATION
 resource "aws_route_table_association" "rt_public_To_sn_public" {
   subnet_id      = aws_subnet.sn_public.id
   route_table_id = aws_route_table.rt_public.id
 }
 
-# SECURITY GROUP
 resource "aws_security_group" "sg_public" {
-  name   = "sg_public"
+  name   = var.sg_public_name
   vpc_id = aws_vpc.vpc.id
 
   egress {
@@ -68,19 +61,4 @@ resource "aws_security_group" "sg_public" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-}
-
-# EC2 INSTANCE
-
-data "template_file" "user_data" {
-  template = file("./scripts/user_data.sh")
-}
-
-resource "aws_instance" "instance" {
-  ami                    = "ami-02e136e904f3da870"
-  instance_type          = "t2.micro"
-  subnet_id              = aws_subnet.sn_public.id
-  vpc_security_group_ids = [aws_security_group.sg_public.id]
-  user_data              = base64encode(data.template_file.user_data.rendered)
-  key_name               = "ec2_key_pair"
 }
